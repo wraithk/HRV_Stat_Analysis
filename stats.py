@@ -1,19 +1,23 @@
 import numpy as np
+import os
 import random
 from scipy.spatial.distance import pdist, squareform
 import stats_calculator as s
 
 def main():
+    #The directory where this file lives
+    ROOTDIR = os.path.dirname(__file__)
+    RR_INTERVAL_DATA_COL = 1
+
     output = np.empty((0,5))
     #Import baseline and conditions R Peaks data
-    input_baseline_data = np.genfromtxt('App/Data/P5 D1 Baseline HR_R-Peaks_0.1-5.1.txt', delimiter='\t')
-    input_condition_data = np.genfromtxt('App/Data/P5 D1 Drive HR_R-Peaks_16.49-21.49.txt', delimiter='\t')
-    
-    input_baseline_data = input_baseline_data[:,0]
-    input_condition_data = input_condition_data[:,0]
+    #These files are in "<timestamp>\t<rr_interval>" format (tab separated).
+    #We don't need the timestamp so strip it out.
+    input_baseline_data = np.genfromtxt(os.path.join(ROOTDIR, 'Data', 'P5 D1 Baseline HR_R-Peaks_0.1-5.1.txt'), delimiter='\t', usecols=(RR_INTERVAL_DATA_COL))
+    input_condition_data = np.genfromtxt(os.path.join(ROOTDIR, 'Data','P5 D1 Drive HR_R-Peaks_16.49-21.49.txt'), delimiter='\t', usecols=(RR_INTERVAL_DATA_COL))
 
     #Calculate the baseline RRIs
-    baseline_intervals = calculate_r_r_intervals(input_baseline_data)
+    baseline_intervals = input_baseline_data
     #Calculate the HRV measures of the baseline 
     baseline_rmssd = s.calculate_rmssd(baseline_intervals)
     baseline_rmse = s.calculate_rmse(baseline_intervals)
@@ -22,10 +26,10 @@ def main():
 
     #D2 is not being output in the txt, its validity is still being checked
     baseline_d2 = s.calculate_d2(baseline_intervals)
-    print(baseline_d2)
+    print("Baseline D2:", baseline_d2)
 
     #Calculate the original condition RRIs
-    original_condition_intervals = calculate_r_r_intervals(input_condition_data)
+    original_condition_intervals = input_condition_data
     #Calculate the original condition HRV measures
     original_condition_rmssd = s.calculate_rmssd(original_condition_intervals)
     original_conditon_rmse = s.calculate_rmse(original_condition_intervals)
@@ -33,13 +37,11 @@ def main():
     original_condition_sampen = s.calculate_sampen(original_condition_intervals)
 
     #Remove R-R intervals at random and recalculate chosen measures
-    counter = 0 
-    while counter < 1000:
+    for counter in range(1000):
         print(counter)
         deleted_intervals, num_deleted = rand_delete(original_condition_intervals,0.1)
         new_row = calculate_and_write(deleted_intervals,num_deleted)
         output = np.vstack((output,new_row))
-        counter += 1
 
     with open('results.txt', 'w') as f:
         # Write manually implemented rowss
@@ -65,11 +67,6 @@ def calculate_and_write(intervals,eliminated):
     final_sampen = s.calculate_sampen(intervals)
     new_row = [eliminated,final_rmssd,final_rmse,final_mean,final_sampen]
     return new_row
-
-# Calculates RRIs from the R Peaks data
-def calculate_r_r_intervals(data):
-    r_r_intervals = np.diff(data).astype(float) * 1000.00
-    return r_r_intervals
 
 #Randonmly deletes n RRIs from the dataset
 def rand_delete(data,max_removed):

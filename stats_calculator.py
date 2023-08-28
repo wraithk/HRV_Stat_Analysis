@@ -1,8 +1,7 @@
 import numpy as np 
 
 def calculate_rmssd(data):
-    diffs = np.diff(data)
-    diff_squared = np.square(diffs)
+    diff_squared = np.square(data)
     mean_diff_squared = np.mean(diff_squared)
     rmssd = np.sqrt(mean_diff_squared)
     return rmssd
