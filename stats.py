@@ -5,32 +5,34 @@ import stats_calculator as s
 
 def main():
     output = np.empty((0,5))
-
+    #Import baseline and conditions R Peaks data
     input_baseline_data = np.genfromtxt('App/Data/P5 D1 Baseline HR_R-Peaks_0.1-5.1.txt', delimiter='\t')
     input_condition_data = np.genfromtxt('App/Data/P5 D1 Drive HR_R-Peaks_16.49-21.49.txt', delimiter='\t')
     
     input_baseline_data = input_baseline_data[:,0]
     input_condition_data = input_condition_data[:,0]
 
-    #Calculate the HRV measures of the baseline 
+    #Calculate the baseline RRIs
     baseline_intervals = calculate_r_r_intervals(input_baseline_data)
-    np.savetxt('baseline_intervals',baseline_intervals)
+    #Calculate the HRV measures of the baseline 
     baseline_rmssd = s.calculate_rmssd(baseline_intervals)
     baseline_rmse = s.calculate_rmse(baseline_intervals)
     baseline_mean = s.mean_interval(baseline_intervals)
     baseline_sampen = s.calculate_sampen(baseline_intervals)
+
+    #D2 is not being output in the txt, its validity is still being checked
     baseline_d2 = s.calculate_d2(baseline_intervals)
     print(baseline_d2)
 
-    #Calculate the HRV measures of the original condition data
+    #Calculate the original condition RRIs
     original_condition_intervals = calculate_r_r_intervals(input_condition_data)
-
+    #Calculate the original condition HRV measures
     original_condition_rmssd = s.calculate_rmssd(original_condition_intervals)
     original_conditon_rmse = s.calculate_rmse(original_condition_intervals)
     original_condition_mean = s.mean_interval(original_condition_intervals)
     original_condition_sampen = s.calculate_sampen(original_condition_intervals)
-    '''
-    #Remove R-R intervals at random and 
+
+    #Remove R-R intervals at random and recalculate chosen measures
     counter = 0 
     while counter < 1000:
         print(counter)
@@ -40,7 +42,7 @@ def main():
         counter += 1
 
     with open('results.txt', 'w') as f:
-        # Write your manually implemented rows
+        # Write manually implemented rowss
         f.write("Baseline Data Length\n")
         f.write(f"{input_baseline_data.shape[0]}\n")
         f.write("Rows Removed\tRMSSD\tRMSE\tMean\tSampEn\n")
@@ -51,10 +53,11 @@ def main():
         f.write("Rows Removed\tRMSSD\tRMSE\tMean\tSampEn\n")
         f.write(f"0\t{original_condition_rmssd}\t{original_conditon_rmse}\t{original_condition_mean}\t{original_condition_sampen}\n")
         
-        # Write your numpy array to the text file
+        # Write numpy array to text file
         np.savetxt(f, output,delimiter='\t')
         print("Data saved")
-        '''
+
+#Calcuates each measure and creates a row from them. Adds the number of removed rows to the start
 def calculate_and_write(intervals,eliminated):
     final_rmssd = s.calculate_rmssd(intervals)
     final_rmse = s.calculate_rmse(intervals)
@@ -63,10 +66,12 @@ def calculate_and_write(intervals,eliminated):
     new_row = [eliminated,final_rmssd,final_rmse,final_mean,final_sampen]
     return new_row
 
+# Calculates RRIs from the R Peaks data
 def calculate_r_r_intervals(data):
     r_r_intervals = np.diff(data).astype(float) * 1000.00
     return r_r_intervals
 
+#Randonmly deletes n RRIs from the dataset
 def rand_delete(data,max_removed):
     maximum = int(max_removed*data.shape[0])
     
