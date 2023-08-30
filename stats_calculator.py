@@ -1,4 +1,5 @@
 import numpy as np 
+import scipy.spatial
 
 def calculate_rmssd(data):
     diffs = np.diff(data)
@@ -18,15 +19,13 @@ def calculate_rmse(data):
 def mean_interval(data):
     return np.mean(data)
 
-def calculate_sampen(data_in, m=2, r=0.2):
-    data = np.array(data_in)
+def calculate_sampen(data, m=2, r=0.2):
     N = len(data)
-    B = 0.0
-    A = 0.0
-    
-    sd = np.std(data)
-    threshold = r * sd
-    
+    A_counter = 0
+    B_counter = 0.0
+    std = np.std(data)
+    threshold = r * std
+
     def distance(v1, v2):
         rtn = 0
         for i in range(len(v1)):
@@ -34,54 +33,38 @@ def calculate_sampen(data_in, m=2, r=0.2):
             if curr>rtn:
                 rtn = curr
         return rtn
+    #Calculate sum for A 
+    for i in range(N-m):
+        curr_A_counter = 0
+        group_1 = data[i:i+m+1]
+        for j in range(i+1,N-m):
+            curr_group_2 = data[j:j+m+1]
+            if distance(group_1,curr_group_2) <= threshold:
+                curr_A_counter += 1
+        A_counter += curr_A_counter / (N-m-1)
+    #Calculate sum for B
+    for i in range(N-m+1):
+        curr_B_counter = 0
+        group_1 = data[i:i+m]
+        for j in range(i+1,N-m+1):
+            curr_group_2 = data[j:j+m]
+            if distance(group_1,curr_group_2) <= threshold:
+                curr_B_counter += 1
+        B_counter += curr_B_counter / (N-m)
+    A = A_counter/(N-m-1)
+    B = B_counter/(N-m)
     
-    def bmi(data, i): 
-        counter = 0
-        xmi = data[i:i+m]
-        for j in range(0,N-m):
-            if j == i:
-                continue
-            xmj = data[j:j+m]
-            if distance(xmi,xmj) <= threshold:
-                counter +=1
-        rtn = counter/(N-m-1)
-        return rtn
+    return -np.log(A/B)
 
-    def ami(data, i): 
-        counter = 0
-        xmi = data[i:i+m+1]
-        for j in range(0,N-m):
-            if j == i:
-                continue
-            xmj = data[j:j+m+1]
-            if distance(xmi,xmj) <= threshold:
-                counter +=1
-        rtn = counter/(N-m-1)
-        return rtn
-    
-    for i in range(0,N-m):
-        B += bmi(data,i)
-        A += ami(data,i)
-    
-    B = B/(N-m)
-    A = A/(N-m)
-    
-    if A == 0 or B == 0: return np.inf
-    
-    rtn = -np.log(A/B)
-    
-    return rtn 
-
-def calculate_d2(data):
-    sd = np.std(data)
+def calculate_d2(data,r=0.15):
     N = len(data)
-
-    r = 0.15*sd
-    diff_count = 0
+    std = np.std(data)
+    threshold = r*std
+    C_counter = 0
     for i in range(N):
         for j in range(i+1,N):
-            if abs(data[i]-data[j]) < r:
-                diff_count+=1  
-    C = diff_count/(N*(N-1))
+            if abs(data[i]-data[j])<=threshold:
+                C_counter += 1
+    C = C_counter/(N*(N-1))
     return np.log(C)/np.log(r)
 
